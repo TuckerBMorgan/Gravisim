@@ -2,7 +2,6 @@
 name = "gravisim"
 version = "0.1.0"
 authors = ["Branson Camp <camp.branson@gmail.com>"]
-build = "build.rs"
 
 [dependencies]
 stopwatch = "0.0.7"

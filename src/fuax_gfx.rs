@@ -130,8 +130,8 @@ impl FauxGFX for WindowCanvas {
 		let dx1 = start.x as f32;
 		let dy1 = start.y as f32;
 		let dx2 = end.x as f32;
-		let dy2 = end.y as f32;
-
+		let dy2 = end.y as f32; 
+  
 
 		let verts = vec![Point::new((dx1 + ny) as i32, (dy1 - nx)  as i32),
 							 Point::new((dx1 - ny) as i32, (dy1 + nx)  as i32),

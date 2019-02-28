@@ -2,10 +2,12 @@
 name = "gravisim"
 version = "0.1.0"
 authors = ["Branson Camp <camp.branson@gmail.com>"]
+build = "build.rs"
 
 [dependencies]
 stopwatch = "0.0.7"
 
 [dependencies.sdl2]
 version = "0.31.0"
-features = ["gfx", "ttf"]
+default-features = false
+features = ["ttf"]

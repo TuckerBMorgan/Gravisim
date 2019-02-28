@@ -1,6 +1,7 @@
-use sdl2::render::WindowCanvas;
+use sdl2::render::{WindowCanvas, BlendMode};
 use sdl2::pixels::Color;
-use sdl2::gfx::primitives::DrawRenderer;
+use sdl2::rect::Point;
+use fuax_gfx::FauxGFX;
 use cam::Cam;
 
 #[derive(Copy, Clone)]
@@ -70,10 +71,12 @@ impl Body {
         self.a_y += acc_vector.1;
     }
 
+ 
     pub fn render(&self, canvas: &mut WindowCanvas, cam: &Cam) {
         let color_g = 255u8.saturating_sub(self.density as u8);
 
         let t = cam.transform((self.x, self.y));
-        canvas.filled_circle(t.0 as i16, t.1 as i16, (self.size * cam.zoom) as i16, (255, color_g, 255, 255));
+        
+        canvas.filled_circle(Point::new(t.0 as i32, t.1 as i32), (self.size * cam.zoom) as i16, Color::RGBA(255, color_g, 255, 255));
     }
 }

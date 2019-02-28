@@ -5,6 +5,7 @@ mod body;
 mod system;
 mod cam;
 mod gui;
+mod fuax_gfx;
 
 use sdl2::pixels::Color;
 use sdl2::keyboard::Keycode;
@@ -12,8 +13,9 @@ use sdl2::keyboard::KeyboardState;
 use sdl2::mouse::MouseState;
 use sdl2::keyboard::Scancode;
 use sdl2::event::Event;
-use sdl2::gfx::primitives::DrawRenderer;
+use sdl2::rect::Point;
 use stopwatch::Stopwatch;
+use fuax_gfx::FauxGFX;
 
 const GRAVITY_CONST: f32 = 0.0005;
 const PI: f32 = 3.14159265;
@@ -69,7 +71,10 @@ fn main() {
 
     'running: loop {
         //FPS and Time Mult
-        let elapsed_nanos = fps_sw.elapsed().subsec_nanos();
+        let mut elapsed_nanos = fps_sw.elapsed().subsec_nanos();
+        if elapsed_nanos == 0 {
+            elapsed_nanos = 1;
+        }
         let fps = 1_000_000_000 / elapsed_nanos;
         let time_mult = (elapsed_nanos as f32) * 400.0 / 1_000_000_000f32;
         total_time += time_mult;
@@ -187,16 +192,17 @@ fn main() {
         };
 
         let selected_transformed = cam.transform(selected_pos);
-        canvas.filled_circle(selected_transformed.0 as i16, selected_transformed.1 as i16, (selected_size) as i16, (255, color_g, 255, 50))
-            .expect("Failed to draw cursor circle");
-
+        
+        canvas.filled_circle(Point::new(selected_transformed.0 as i32, selected_transformed.1 as i32), (selected_size) as i16, Color::RGBA(255, color_g, 255, 50));
+       //     .expect("Failed to draw cursor circle");
+        
         if pos_selected {
             let point1 = selected_transformed;
             let point2 = (mouse_x, mouse_y);
-            canvas.thick_line(point1.0 as i16, point1.1 as i16, point2.0 as i16, point2.1 as i16, 5, (255, 255, 255, 50))
-                .expect("Failed to draw cursor line");
+            canvas.thick_line( Point::new(point1.0 as i32, point1.1 as i32), Point::new(point2.0 as i32, point2.1 as i32), 5, Color::RGBA(255, 255, 255, 50))
+//                .expect("Failed to draw cursor line");
         }
-
+        
         system.render(&mut canvas, &cam);
 
         // Render Fonts

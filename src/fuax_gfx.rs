@@ -4,24 +4,28 @@ use sdl2::rect::{Point, Rect};
 
 pub trait FauxGFX {
 	fn draw_quadrants(&mut self, p: Point, dp: Point, f: i32) -> Result<(), String>;
+	fn pixel_rgba_weight(&mut self, p: Point, color: Color, weight: i32) -> Result<(), String>;
 	fn pixel_rgba(&mut self, p: Point, color: Color) -> Result<(), String>;
 	fn pixel(&mut self, p: Point) -> Result<(), String>;
 	fn vline(&mut self, x: i32, y1: i32, y2: i32) -> Result<(), String>;
-	fn vline_rgba(&mut self, x: i32, y1: i32, y2: i32, color: Color);
+	fn vline_rgba(&mut self, x: i32, y1: i32, y2: i32, color: Color) -> Result<(), String>;
 	fn hline(&mut self, x1: i32, x2: i32, y: i32) -> Result<(), String>;
-	fn hline_rgba(&mut self, x1: i32, x2: i32, y: i32, color: Color);
+	fn hline_rgba(&mut self, x1: i32, x2: i32, y: i32, color: Color) -> Result<(), String>;
 	fn ellipse_rgba(&mut self, p: Point, radius_x: i16, radius_y: i16, color: Color, f: i32) -> Result<(), String>;
-	fn filled_circle(&mut self, p: Point, rad: i16, color: Color);
-	fn filled_polygon_rgba_mt(&mut self, verts: Vec<Point>, color: Color);
-	fn thick_line(&mut self, start: Point, end: Point, width: i32, color: Color);
-	fn box_rgba(&mut self, top_right: Point, bottom_left: Point, color: Color);
-	fn line_rgba(&mut self, start: Point, end: Point, color: Color);
-
+	fn filled_circle(&mut self, p: Point, rad: i16, color: Color) -> Result<(), String>;
+	fn filled_polygon_rgba_mt(&mut self, verts: Vec<Point>, color: Color) -> Result<(), String>;
+	fn thick_line(&mut self, start: Point, end: Point, width: i32, color: Color)-> Result<(), String>;
+	fn box_rgba(&mut self, top_right: Point, bottom_left: Point, color: Color) -> Result<(), String>;
+	fn line_rgba(&mut self, start: Point, end: Point, color: Color) -> Result<(), String>;
+	fn rectangle_rgba(&mut self, top_right: Point, bottom_left: Point, color: Color) -> Result<(), String>;
+	fn rounded_rentangle_rgba(&mut self, top_right: Point, bottom_left: Point, radius: i32, color: Color)-> Result<(), String>;
+	fn arc_rgba(&mut self,p: Point, radius: i32, start: i32, end: i32, color: Color) -> Result<(), String>;
+	fn rounded_box_rgba(&mut self, top_right: Point, bottom_left: Point, radius: i32, color: Color) -> Result<(), String>;
 }
 
 impl FauxGFX for WindowCanvas {
 
-	fn line_rgba(&mut self, start: Point, end: Point, color: Color){
+	fn line_rgba(&mut self, start: Point, end: Point, color: Color) -> Result<(), String> {
 		let blend_mode : BlendMode;
 		if color.a == 255 {
 			blend_mode = BlendMode::None;
@@ -31,10 +35,10 @@ impl FauxGFX for WindowCanvas {
 		}
 		self.set_blend_mode(blend_mode);
 		self.set_draw_color(color);
-		self.draw_line(start, end);
+		return self.draw_line(start, end);
 	}
 	
-	fn hline_rgba(&mut self, x1: i32, x2: i32, y: i32, color: Color){
+	fn hline_rgba(&mut self, x1: i32, x2: i32, y: i32, color: Color) -> Result<(), String> {
 		let blend_mode : BlendMode;
 		if color.a == 255 {
 			blend_mode = BlendMode::None;
@@ -44,10 +48,10 @@ impl FauxGFX for WindowCanvas {
 		}
 		self.set_blend_mode(blend_mode);
 		self.set_draw_color(color);
-		self.draw_line(Point::new(x1, y), Point::new(x2, y));
+		return self.draw_line(Point::new(x1, y), Point::new(x2, y));
 	}
 	
-	fn vline_rgba(&mut self, x: i32, y1: i32, y2: i32, color: Color ){
+	fn vline_rgba(&mut self, x: i32, y1: i32, y2: i32, color: Color ) -> Result<(), String> {
 		let blend_mode : BlendMode;
 		if color.a == 255 {
 			blend_mode = BlendMode::None;
@@ -57,19 +61,20 @@ impl FauxGFX for WindowCanvas {
 		}
 		self.set_blend_mode(blend_mode);
 		self.set_draw_color(color);
-		self.draw_line(Point::new(x, y1), Point::new(x, y2));
+		return self.draw_line(Point::new(x, y1), Point::new(x, y2));
 	}
 	
-	fn box_rgba(&mut self, top_right: Point, bottom_left: Point, color: Color){
+	fn box_rgba(&mut self, top_right: Point, bottom_left: Point, color: Color) -> Result<(), String> {
 		if top_right.x == bottom_left.x {
 			if top_right.y == bottom_left.y {
-				self.pixel_rgba(top_right, color);
+				return self.pixel_rgba(top_right, color);
 			} else {
-				self.vline_rgba(top_right.x, top_right.y, bottom_left.y , color);	
+				return self.vline_rgba(top_right.x, top_right.y, bottom_left.y , color);	
 			}
-		} else {
-			self.hline_rgba(top_right.x, bottom_left.x, top_right.y, color);
+		} else if top_right.y == bottom_left.y {
+			return self.hline_rgba(top_right.x, bottom_left.x, top_right.y, color);
 		}
+		
 
 		let mut x_1 = top_right.x;
 		let mut x_2 = bottom_left.x;
@@ -101,21 +106,21 @@ impl FauxGFX for WindowCanvas {
 
 		self.set_blend_mode(blend_mode);
 		self.set_draw_color(color);
-		self.fill_rect(rect);
+		return self.fill_rect(rect);
 	}
 
-	fn thick_line(&mut self, start: Point, end: Point, width: i32, color: Color) {
+	fn thick_line(&mut self, start: Point, end: Point, width: i32, color: Color) -> Result<(), String> {
 		if width < 1 {
-			//return ERR
+			return Err(String::from("Width not valid for line"));
 		}
 
 		if start.x == end.x && start.y == start.y {
 			let wh = width / 2;
-			self.box_rgba(Point::new(start.x - wh, start.y - wh), Point::new(end.x + width, end.y + width), color);
+			return self.box_rgba(Point::new(start.x - wh, start.y - wh), Point::new(end.x + width, end.y + width), color);
 		}
 
 		if width == 1 {
-			self.line_rgba(start, end, color);
+			return self.line_rgba(start, end, color);
 		}
 
 		let dx = (end.x - start.x) as f32;
@@ -138,12 +143,12 @@ impl FauxGFX for WindowCanvas {
 							 Point::new((dx2 - ny) as i32, (dy2 + nx)  as i32),
 							 Point::new((dx2 + ny) as i32, (dy2 - nx)  as i32)];
 
-		self.filled_polygon_rgba_mt(verts, color);
+		return self.filled_polygon_rgba_mt(verts, color);
 	}
 
-	fn filled_polygon_rgba_mt(&mut self, verts: Vec<Point>, color: Color) {
+	fn filled_polygon_rgba_mt(&mut self, verts: Vec<Point>, color: Color) -> Result<(), String> {
 		if verts.len() < 3  {
-			//return ERRs
+			return Err(String::from("Not enough vertices"));
 		}
 
 
@@ -218,37 +223,42 @@ impl FauxGFX for WindowCanvas {
 
 			let mut i = 0;
 			
-			let mut xa = 0;
-			let mut xb = 0;
+			let mut x_a;
+			let mut x_b;
 
 			while i < ints {
-				xa = polygon_indices[i] + 1;
-				xa = (xa >> 16) + ((xa & 32768) >> 15);	
+				x_a = polygon_indices[i] + 1;
+				x_a = (x_a >> 16) + ((x_a & 32768) >> 15);	
 
-				xb = polygon_indices[i + 1] - 1;
-				xb = (xb >> 16) + ((xb & 32768) >> 15);	         
+				x_b = polygon_indices[i + 1] - 1;
+				x_b = (x_b >> 16) + ((x_b & 32768) >> 15);	         
 				i += 2;
 
-				self.hline(xa, xb, y);
+				let result = self.hline(x_a, x_b, y);
+				if result.is_err() {
+					return result;
+				}
 			}
-
 		}
+
+		return Ok(());
 	}
 
 	fn draw_quadrants(&mut self, p: Point, dp: Point, f: i32) -> Result<(), String> {
 		if dp.x == 0 {
 			if dp.y == 0 {
-				self.pixel(p);
+				return self.pixel(p);
 			} else {
 				let ypdy = p.y + dp.y;
 				let ymdy = p.y - dp.y;
 
 				if f != 0  {
-					self.vline(p.x, ymdy, ypdy);
+					return self.vline(p.x, ymdy, ypdy);
 				}
 				else {
-					self.pixel(Point::new(p.x, ypdy));
-					self.pixel(Point::new(p.x, ymdy));
+					return self.pixel(Point::new(p.x, ypdy)).and_then(|_| {
+						return self.pixel(Point::new(p.x, ymdy));
+					});
 				}
 			}
 		} else {
@@ -258,17 +268,33 @@ impl FauxGFX for WindowCanvas {
 			let ymdy = p.y - dp.y;
 
 			if f != 0 {
-				self.vline(xpdx, ymdy, ypdy);
-				self.vline(xmdx, ymdy, ypdy);
+				return self.vline(xpdx, ymdy, ypdy).and_then(|_|{
+					return self.vline(xmdx, ymdy, ypdy);
+				});
 			} else {
-				self.pixel(Point::new(xpdx, ypdy));
-				self.pixel(Point::new(xmdx, ypdy));
-				self.pixel(Point::new(xpdx, ymdy));
-				self.pixel(Point::new(xmdx, ymdy));
+				return self.pixel(Point::new(xpdx, ypdy)).and_then(|_|{
+					return self.pixel(Point::new(xmdx, ypdy)).and_then(|_|{
+						return self.pixel(Point::new(xpdx, ymdy)).and_then(|_| {
+							return self.pixel(Point::new(xmdx, ymdy));
+							});
+						});
+				});
 			}
 		}
+	}
 
-    	return Ok(())
+	fn pixel_rgba_weight(&mut self, p: Point, color: Color, weight: i32) -> Result<(), String> {
+
+		let mut a_x = color.a as i32;
+		a_x = (a_x * weight) >> 8;
+		if a_x > 255 {
+			a_x = 255;
+		} else {
+			a_x = a_x & 0x000000ff;
+		}
+		let new_color = Color::RGBA(color.r, color.g, color.b, a_x as u8);
+
+		return self.pixel_rgba(p, new_color);
 	}
 
 	fn pixel_rgba(&mut self, p: Point, color: Color) -> Result<(), String> {
@@ -281,26 +307,21 @@ impl FauxGFX for WindowCanvas {
 			blend_mode = BlendMode::Blend;
 		}
 
-		let _ = self.set_blend_mode(blend_mode);
-		let _ = self.set_draw_color(color);
-		let _ = self.draw_point(p);
-
-		return Ok(());
+		self.set_blend_mode(blend_mode);
+		self.set_draw_color(color);
+		return self.draw_point(p);
 	}
 
 	fn pixel(&mut self, p: Point) -> Result<(), String> {
-		let _ = self.draw_point(p);
-		return Ok(());
+		return self.draw_point(p);
 	}
 
 	fn vline(&mut self, x: i32, y1: i32, y2: i32) -> Result<(), String> {
-		let _ = self.draw_line(Point::new(x , y1), Point::new(x, y2));
-		Ok(())
+		return self.draw_line(Point::new(x , y1), Point::new(x, y2));
 	}
 
 	fn hline(&mut self, x1: i32, x2: i32, y: i32) -> Result<(), String> {
-		let _ = self.draw_line(Point::new(x1, y), Point::new(x2, y));
-		Ok(())
+		return self.draw_line(Point::new(x1, y), Point::new(x2, y));
 	}
 
 	fn ellipse_rgba(&mut self, p: Point, radius_x: i16, radius_y: i16, color: Color, f: i32) -> Result<(), String> {
@@ -309,7 +330,7 @@ impl FauxGFX for WindowCanvas {
 		if radius_x < 0 || radius_y < 0 {
 			return Err(String::from(""));
 		}
-		let  DEFAULT_ELLIPSE_OVERSCAN =	4;
+		let  default_eclipse_overscan =	4;
 
 		let blend_mode : BlendMode;
 
@@ -338,26 +359,28 @@ impl FauxGFX for WindowCanvas {
 		let mut rxi : i32 = radius_x as i32;
 		let mut ryi : i32 = radius_y as i32;
 
-		let ellipseOverscan;
+		let ellipse_overscan;
 
 		if rxi >= 512 || ryi >= 512 {
-			ellipseOverscan = DEFAULT_ELLIPSE_OVERSCAN  / 4;
+			ellipse_overscan = default_eclipse_overscan  / 4;
 		}
 		else if rxi >= 256 || ryi >= 256 {
-			ellipseOverscan = DEFAULT_ELLIPSE_OVERSCAN / 2;
+			ellipse_overscan = default_eclipse_overscan / 2;
 		}
 		else {
-			ellipseOverscan = DEFAULT_ELLIPSE_OVERSCAN / 1;
+			ellipse_overscan = default_eclipse_overscan / 1;
 		}
 
-		let mut oldX : i32  = 0;
-		let mut oldY : i32 = 0;
-		let mut scrX : i32 = 0;
-		let mut scrY : i32 = 0;
-		self.draw_quadrants(p, Point::new(0, radius_y as i32), f);
-
-		rxi *= ellipseOverscan;
-		ryi *= ellipseOverscan;
+		let mut old_x : i32  = 0;
+		let mut old_y : i32 = 0;
+		let mut src_x : i32 = 0;
+		let mut src_y : i32;
+		let result = self.draw_quadrants(p, Point::new(0, radius_y as i32), f);
+		if result.is_err() {
+			return result;
+		}
+		rxi *= ellipse_overscan;
+		ryi *= ellipse_overscan;
 		let rx2 : i32 = rxi * rxi;
 		let rx22 : i32 = rx2 + rx2;
 		let ry2 : i32 = ryi * ryi;
@@ -381,12 +404,15 @@ impl FauxGFX for WindowCanvas {
 				error -= deltaY;
 			}
 
-			scrX = curX / ellipseOverscan;
-			scrY = curY / ellipseOverscan;
-			if (scrX != oldX && scrY == oldY) || (scrX != oldX && scrY != oldY) {
-				self.draw_quadrants(p, Point::new(scrX as i32, scrY as i32), f);
-				oldX = scrX;
-				oldY = scrY;
+			src_x = curX / ellipse_overscan;
+			src_y = curY / ellipse_overscan;
+			if (src_x != old_x && src_y == old_y) || (src_x != old_x && src_y != old_y) {
+				let result = self.draw_quadrants(p, Point::new(src_x as i32, src_y as i32), f);
+				if result.is_err() {
+					return result;
+				}
+				old_x = src_x;
+				old_y = src_y;
 			}
 		}
 
@@ -422,29 +448,28 @@ impl FauxGFX for WindowCanvas {
 				error += deltaX;
 				}
 
-				scrX = curX / ellipseOverscan;
-				scrY = curY / ellipseOverscan;
-				if (scrX != oldX && scrY == oldY) || (scrX != oldX && scrY != oldY) {
-					oldY-=1;
-					while oldY >= scrY {
-						self.draw_quadrants(p , Point::new(scrX, oldY), f);
-						/* revent overdraw */
+				src_x = curX / ellipse_overscan;
+				src_y = curY / ellipse_overscan;
+				if (src_x != old_x && src_y == old_y) || (src_x != old_x && src_y != old_y) {
+					old_y-=1;
+					while old_y >= src_y {
+						self.draw_quadrants(p , Point::new(src_x, old_y), f)?;
 						if f != 0 {
-							oldY = scrY - 1;
+							old_y = src_y - 1;
 						}
-						oldY -=1;
+						old_y -=1;
 					}
-					oldX = scrX;
-					oldY = scrY;
+					old_x = src_x;
+					old_y = src_y;
 				}		
 			}
 
 			/* Remaining points in vertical */
 			if f != 0 {
-				oldY-=1;
+				old_y-=1;
 
-				for i in oldY..=0 {
-					self.draw_quadrants(p , Point::new(scrX,  i), f);
+				for i in old_y..=0 {
+					self.draw_quadrants(p , Point::new(src_x,  i), f)?;
 				}
 			}
 		}
@@ -453,8 +478,490 @@ impl FauxGFX for WindowCanvas {
 	}
 
 
-	fn filled_circle(&mut self, p: Point, rad: i16, color: Color) {
-		self.ellipse_rgba(p, rad, rad, color, 1);
+	fn filled_circle(&mut self, p: Point, rad: i16, color: Color) -> Result<(), String> {
+		return self.ellipse_rgba(p, rad, rad, color, 1);
 	}
 
+	fn rectangle_rgba(&mut self, top_right: Point, bottom_left: Point, color: Color) -> Result<(), String> {
+
+		if top_right.x == bottom_left.x {
+			if top_right.y == bottom_left.y {
+				return self.pixel_rgba(top_right, color);
+			}
+			else {
+				return self.vline_rgba(top_right.x, top_right.y, bottom_left.y, color);
+			}
+		}
+		else if top_right.y == bottom_left.y {
+			return self.hline_rgba(top_right.x, bottom_left.x, top_right.y, color);
+		} 	
+
+		let mut x_1 = top_right.x;
+		let mut x_2 = bottom_left.x;
+		let mut y_1 = top_right.y;
+		let mut y_2 = bottom_left.y;
+
+		if x_1 > x_2 {
+			let tmp = x_1;
+			x_1 = x_2;
+			x_2 = tmp;
+		}
+
+		if y_1 > y_2 {
+			let tmp = y_1;
+			y_1 = y_2;
+			y_2 = tmp;
+		}
+
+
+		let rect = Rect::new(x_1, y_1, (x_2 - x_1 + 1) as u32, (y_2 - y_1 + 1) as u32);
+
+		let blend_mode : BlendMode;
+		if color.a == 255 {
+			blend_mode = BlendMode::None;
+		}
+		else {
+			blend_mode = BlendMode::Blend;
+		}
+
+		self.set_blend_mode(blend_mode);
+		self.set_draw_color(color);
+		return self.fill_rect(rect);
+	}
+
+	fn rounded_rentangle_rgba(&mut self, top_right: Point, bottom_left: Point, radius: i32, color: Color) -> Result<(), String> {
+		if radius < 0 {
+			return Err(String::from("less then 0 radius not allowed"));
+		}
+
+		if radius <= 1 {
+			return self.rectangle_rgba(top_right, bottom_left, color);
+		}
+
+		if top_right.x == bottom_left.x {
+			if top_right.y == bottom_left.y {
+				return self.pixel_rgba(top_right, color);
+			}
+			else {
+				return self.vline_rgba(top_right.x, top_right.y, bottom_left.y, color);
+			}
+		}
+		else if top_right.y == bottom_left.y {
+			return self.hline_rgba(top_right.x, bottom_left.x, top_right.y, color);
+		} 	
+
+		let mut x_1 = top_right.x;
+		let mut x_2 = bottom_left.x;
+		let mut y_1 = top_right.y;
+		let mut y_2 = bottom_left.y;
+
+		if x_1 > x_2 {
+			let tmp = x_1;
+			x_1 = x_2;
+			x_2 = tmp;
+		}
+
+		if y_1 > y_2 {
+			let tmp = y_1;
+			y_1 = y_2;
+			y_2 = tmp;
+		}
+
+		let mut rad = radius;
+		let mut w = bottom_left.x - top_right.x;
+		let mut h = bottom_left.y - top_right.y;
+
+		if rad * 2 > w {
+			rad = w / 2;
+		}
+
+		if rad * w > h {
+			rad = h / 2;
+		}
+
+		let xx1 = x_1 + rad;
+		let xx2 = x_2 - rad;
+		let yy1 = y_1 + rad;
+		let yy2 = y_2 - rad;
+		self.arc_rgba(Point::new(xx1, yy1), rad, 180, 270, color);
+		self.arc_rgba(Point::new(xx2, yy1), rad, 270, 360, color);
+		self.arc_rgba(Point::new(xx1, yy2), rad,  90, 180, color);
+		self.arc_rgba(Point::new(xx2, yy2), rad,   0,  90, color);
+
+	if xx1 <= xx2 {
+		self.hline_rgba(xx1, xx2, y_1, color);
+		self.hline_rgba(xx1, xx2, y_2, color);
+	}
+	if yy1 <= yy2 {
+		self.vline_rgba(x_1, yy1, yy2, color);
+		self.vline_rgba(x_2, yy1, yy2, color);
+	}
+
+
+		return Ok(());
+	}
+
+	fn arc_rgba(&mut self,p: Point, radius: i32, start: i32, end: i32, color: Color) -> Result<(), String>{
+
+		if radius < 0 {
+			return Err(String::from("Cannot draw arc with radius les then 0"));
+		}
+		let mut cy = radius;
+		let mut df = 1 - radius;
+		let mut d_e = 3;
+		let mut d_se = -2 * radius + 5;
+
+		if radius == 0 {
+			return self.pixel_rgba(p, color);
+		}
+
+		let mut drawoct = 0;
+
+		let mut use_start = start % 360;
+		let mut use_end = end % 360;
+
+		while use_start < 0 {
+			use_start += 360;
+		}
+
+		while use_end < 0 {
+			use_end += 360;
+		}
+
+		use_start %= 360;
+		use_end %= 360;
+
+		let start_oct = use_start / 45;
+		let end_oct = use_end / 45;
+		let mut oct = start_oct - 1;
+		let mut dstart : f32;
+		let mut dend : f32;
+		let mut temp : f32 = 0.0;
+		let mut stopval_start : i32 = 0;
+		let mut stopval_end : i32 = 0;
+
+
+		//this is replicate the do while loop 
+		//of the original source code		
+		let mut once = true;
+
+		while once || oct != end_oct {
+			once = false;
+			oct = (oct + 1) % 8;
+
+			if oct == start_oct {
+				dstart = use_start as f32;
+				match oct {
+					0 | 3 => {
+						temp = (dstart * std::f32::consts::PI / 180.0).sin()
+					},
+					1 | 6 => {
+						temp = (dstart * std::f32::consts::PI / 180.0).cos()
+					},
+					2 | 5 => {
+						temp = -(dstart * std::f32::consts::PI / 180.0).cos()
+					},
+					4 | 7 => {
+						temp = -(dstart * std::f32::consts::PI / 180.0).sin()
+					} 
+					_ => {
+
+					}
+				}
+
+				temp = temp * radius as f32;
+				stopval_start = temp as i32;
+				if oct % 2 != 0 {
+					drawoct |= 1 << oct;
+				} else {
+					drawoct &= 255 - (1 << oct);
+				}
+			}
+			if oct == end_oct {
+				dend = use_end as f32;
+				match oct {
+					0 | 3 => {
+						temp = (dend * std::f32::consts::PI / 180.0).sin()
+					},
+					1 | 6 => {
+						temp = (dend * std::f32::consts::PI / 180.0).cos()
+					},
+					2 | 5 => {
+						temp = -(dend * std::f32::consts::PI / 180.0).cos()
+					},
+					4 | 7 => {
+						temp = -(dend * std::f32::consts::PI / 180.0).sin()
+					} 
+					_ => {
+
+					}
+				}
+
+				temp = temp * radius as f32;
+				stopval_end = temp as i32;
+
+				if start_oct == end_oct {
+					if use_start > use_end {
+						drawoct = 255;
+					} else {
+						drawoct &= 255 - (1 << oct);
+					}
+				}
+				else if oct % 2 != 0 {
+					drawoct &= 255 - (1 << oct);
+				} else {
+					drawoct |= 1 << oct;
+				}
+			} else if start_oct != oct {
+				drawoct |= 1 << end_oct;
+			}
+		}
+
+		let blend_mode : BlendMode;
+		if color.a == 255 {
+			blend_mode = BlendMode::None;
+		}
+		else {
+			blend_mode = BlendMode::Blend;
+		}
+
+		self.set_blend_mode(blend_mode);
+		self.set_draw_color(color);
+
+		let mut once = true;
+
+		let mut cx = 0;
+
+		let mut ypcy;
+		let mut ymcy;
+		let mut xpcx;
+		let mut xmcx;
+		let mut xmcy;
+		let mut	xpcy;
+		let mut	ypcx;
+		let mut ymcx;
+
+		while once || cx <= cy {
+			once = false;
+			ypcy = p.y + cy;
+			ymcy = p.y - cy;
+
+			if cx > 0 {
+				xpcx = p.x + cx;
+				xmcx = p.x - cx;
+				if drawoct & 4 != 0 {
+					self.pixel(Point::new(xmcx, ypcy))?;
+				} else if drawoct & 2 != 0 {
+					self.pixel(Point::new(xpcx, ypcy))?;
+				} else if drawoct & 32 != 0 {
+					self.pixel(Point::new(xmcx, ymcy))?;
+				} else if drawoct & 64 != 0 {
+					self.pixel(Point::new(xpcx, ymcy))?;
+				}
+
+			} else {
+				if drawoct & 96 != 0 {
+					self.pixel(Point::new(p.x, ymcy))?;
+				} else if drawoct & 6 != 0 {
+					self.pixel(Point::new(p.x, ypcy))?;
+				}
+			}
+
+			xpcy = p.x + cy;
+			xmcy = p.x - cy;
+
+			if cx > 0 && cx != cy {
+				ypcx = p.y + cx;
+				ymcx = p.y - cx;
+
+				if drawoct & 8 != 0 {
+					self.pixel(Point::new(xmcy, ypcx))?;
+				} else if drawoct & 1 != 0 {
+					self.pixel(Point::new(xpcy, ypcx))?;
+				} else if drawoct & 16 != 0 {
+					self.pixel(Point::new(xmcy, ymcx))?;
+				} else if drawoct & 128 != 0 {
+					self.pixel(Point::new(xpcy, ymcx))?;
+				}
+			} else if cx == 0 {
+				if drawoct & 24 != 0 {
+					self.pixel(Point::new(xmcy, p.y))?;
+				} else if drawoct & 129 != 0 {
+					self.pixel(Point::new(xpcy, p.y))?;
+				}
+			}
+
+			if stopval_start == cx {
+				if drawoct & (1 << start_oct) != 0 {
+					drawoct &= 255 - (1 << start_oct);
+				} else {
+					drawoct |= 1 << start_oct;
+				}
+			}
+			if stopval_end == cx {
+				if drawoct & (1 << end_oct) != 0 {
+					drawoct &= 255 - (1 << end_oct);
+				} else {
+					drawoct |= 1 << end_oct;
+				}
+			}
+
+
+			if df < 0 {
+				df += d_e;
+				d_e += 2;
+				d_se +=2 ;
+			} else {
+				df += d_se;
+				d_e += 2;
+				d_se += 4;
+				cy -= 1;
+			}
+			cx += 1;
+		}
+
+
+		return Ok(());
+	}
+
+	fn rounded_box_rgba(&mut self, top_right: Point, bottom_left: Point, radius: i32, color: Color) -> Result<(), String>{
+			
+		if radius < 0 {
+			return Err(String::from("Must have a radius larger then 0"));
+		}
+
+		if radius <= 1 {
+			return self.box_rgba(top_right, bottom_left, color);
+		}
+
+
+		if top_right.x == bottom_left.x {
+			if top_right.y == bottom_left.y {
+				return self.pixel_rgba(top_right, color);
+			}
+			else {
+				return self.vline_rgba(top_right.x, top_right.y, bottom_left.y, color);
+			}
+		}
+		else if top_right.y == bottom_left.y {
+			return self.hline_rgba(top_right.x, bottom_left.x, top_right.y, color);
+		} 	
+
+		let mut x_1 = top_right.x;
+		let mut x_2 = bottom_left.x;
+		let mut y_1 = top_right.y;
+		let mut y_2 = bottom_left.y;
+
+		if x_1 > x_2 {
+			let tmp = x_1;
+			x_1 = x_2;
+			x_2 = tmp;
+		}
+
+		if y_1 > y_2 {
+			let tmp = y_1;
+			y_1 = y_2;
+			y_2 = tmp;
+		}
+
+		let mut rad;
+		let w = bottom_left.x - top_right.x;
+		let h = bottom_left.y - top_right.y;
+
+		let r_2 = radius + radius;
+
+		if r_2 > w {
+			rad = w / 2;
+		}
+
+		if r_2 > h {
+			rad = h / 2;
+		}
+
+
+		let blend_mode : BlendMode;
+		if color.a == 255 {
+			blend_mode = BlendMode::None;
+		}
+		else {
+			blend_mode = BlendMode::Blend;
+		}
+
+		self.set_blend_mode(blend_mode);
+		self.set_draw_color(color);
+
+
+		let mut once = false;
+
+		let mut cx = 0;
+		let mut cy = radius;
+
+		let mut ocx = 0xffff;
+		let mut ocy = 0xffff;
+		let mut df = 1 - radius;
+		let mut d_e = 3;
+		let mut d_se = -2 * radius + 5;
+
+		let mut xpcx;
+		let mut xmcx;
+		let mut xpcy;
+		let mut xmcy;
+		let mut ypcy;
+		let mut ymcy;
+		let mut ypcx;
+		let mut ymcx;
+		let mut x = top_right.x + radius;
+		let mut y = top_right.y + radius;
+		let mut dx = bottom_left.x - top_right.x - radius - radius;
+		let mut dy = bottom_left.y - top_right.y - radius - radius;
+
+
+		while once == false && cx <= cy {
+			once = true;
+
+			xpcx = top_right.x + cx;
+			xmcx = x - cx;
+			xpcy = x + cy;
+			xmcy = x - cy;
+			if ocy != cy {
+				if cy > 0 {
+					ypcy = y + cy;
+					ymcy = y - cy;
+					self.hline(xmcx, xpcx + dx, ypcy + dy);
+					self.hline(xmcx, xpcx + dx, ymcy);
+				} else {
+					self.hline(xmcx, xpcx + dx, y);
+				}
+				ocy = cy;
+			}
+			if ocx != cx {
+				if cx != cy {
+					if cx > 0 {
+						ypcx = y + cx;
+						ymcx = y - cx;
+						self.hline(xmcy, xpcy + dx, ymcx);
+						self.hline(xmcy, xpcy + dx, ypcx + dy);
+					} else {
+						self.hline(xmcy, xpcy + dx, y);
+					}
+				}
+				ocx = cx;
+			}
+
+			if df < 0 {
+				df += d_e;
+				d_e += 2;
+				d_se += 2;
+			} else {
+				df += d_se;
+				d_e += 2;
+				d_se += 4;
+				cy-=1;
+			}
+			cx+=1;
+		}
+
+
+		Ok(())
+	}
 }

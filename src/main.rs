@@ -193,14 +193,12 @@ fn main() {
 
         let selected_transformed = cam.transform(selected_pos);
         
-        canvas.filled_circle(Point::new(selected_transformed.0 as i32, selected_transformed.1 as i32), (selected_size) as i16, Color::RGBA(255, color_g, 255, 50));
-       //     .expect("Failed to draw cursor circle");
+        canvas.filled_circle(Point::new(selected_transformed.0 as i32, selected_transformed.1 as i32), (selected_size) as i16, Color::RGBA(255, color_g, 255, 50)).expect("Failed to draw circle");
         
         if pos_selected {
             let point1 = selected_transformed;
             let point2 = (mouse_x, mouse_y);
-            canvas.thick_line( Point::new(point1.0 as i32, point1.1 as i32), Point::new(point2.0 as i32, point2.1 as i32), 5, Color::RGBA(255, 255, 255, 50))
-//                .expect("Failed to draw cursor line");
+            canvas.thick_line( Point::new(point1.0 as i32, point1.1 as i32), Point::new(point2.0 as i32, point2.1 as i32), 5, Color::RGBA(255, 255, 255, 50)).expect("Failed to draw cursor line");
         }
         
         system.render(&mut canvas, &cam);
